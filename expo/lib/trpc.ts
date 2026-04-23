@@ -10,6 +10,12 @@ const getBaseUrl = () => {
     return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   }
 
+  // Pendant le build statique (SSR), pas de throw — retour d'un placeholder
+  // Le vrai URL sera fourni par la variable d'env en production
+  if (typeof window === "undefined") {
+    return "http://localhost:3000";
+  }
+
   throw new Error(
     "No base url found, please set EXPO_PUBLIC_RORK_API_BASE_URL"
   );

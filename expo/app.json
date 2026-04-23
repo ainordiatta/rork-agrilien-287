@@ -39,7 +39,15 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "name": "AgriLien",
+      "shortName": "AgriLien",
+      "lang": "fr",
+      "themeColor": "#1B6B2A",
+      "backgroundColor": "#F7F9FC",
+      "description": "La marketplace agricole du Sénégal et du Mali"
     },
     "plugins": [
       [

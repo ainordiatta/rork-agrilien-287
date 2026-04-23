@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1B6B2A"/>
+  <!-- Feuille principale -->
+  <path d="M96 40 C96 40 60 70 60 105 C60 128 76 148 96 152 C116 148 132 128 132 105 C132 70 96 40 96 40Z" fill="#2E8B3E"/>
+  <!-- Tige centrale -->
+  <path d="M96 152 L96 100" stroke="#F7F9FC" stroke-width="4" stroke-linecap="round"/>
+  <!-- Nervures gauche -->
+  <path d="M96 120 Q80 110 72 100" stroke="#F7F9FC" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M96 108 Q82 98 76 86" stroke="#F7F9FC" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Nervures droite -->
+  <path d="M96 120 Q112 110 120 100" stroke="#F7F9FC" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M96 108 Q110 98 116 86" stroke="#F7F9FC" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Soleil / épi stylisé -->
+  <circle cx="96" cy="62" r="10" fill="#FFD23F" opacity="0.9"/>
+</svg>

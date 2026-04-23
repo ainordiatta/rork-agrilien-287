@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriLien — Hors ligne</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1B6B2A 0%, #2E8B3E 50%, #145221 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #fff;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .icon-wrap {
+      width: 100px;
+      height: 100px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255,255,255,0.25);
+    }
+
+    .icon-wrap svg {
+      width: 56px;
+      height: 56px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    p {
+      font-size: 16px;
+      opacity: 0.85;
+      line-height: 1.6;
+      max-width: 320px;
+      margin-bottom: 36px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 16px;
+      padding: 20px 24px;
+      max-width: 340px;
+      margin-bottom: 32px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.75;
+      margin-bottom: 12px;
+    }
+
+    .card ul {
+      list-style: none;
+      text-align: left;
+    }
+
+    .card ul li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      padding: 6px 0;
+      opacity: 0.9;
+    }
+
+    .card ul li::before {
+      content: "✓";
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      color: #1B6B2A;
+      font-weight: 700;
+      font-size: 16px;
+      padding: 14px 32px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+    }
+
+    .logo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      opacity: 0.9;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #E8611A;
+      display: inline-block;
+      margin-left: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">AgriLien<span class="dot"></span></div>
+
+  <div class="icon-wrap">
+    <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Signal wifi barré -->
+      <path d="M10 28C13 21 20 16 28 16C36 16 43 21 46 28" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+      <path d="M16 34C18.5 29 23 26 28 26C33 26 37.5 29 40 34" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+      <path d="M22 40C23.5 37.5 25.5 36 28 36C30.5 36 32.5 37.5 34 40" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+      <circle cx="28" cy="45" r="2.5" fill="white"/>
+      <!-- Croix rouge -->
+      <line x1="7" y1="7" x2="49" y2="49" stroke="#E8611A" stroke-width="3" stroke-linecap="round"/>
+      <line x1="49" y1="7" x2="7" y2="49" stroke="#E8611A" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <h1>Vous êtes hors ligne</h1>
+  <p>Vérifiez votre connexion internet et réessayez. Les pages déjà visitées restent disponibles.</p>
+
+  <div class="card">
+    <h2>Disponible sans connexion</h2>
+    <ul>
+      <li>Produits déjà consultés</li>
+      <li>Votre panier en cours</li>
+      <li>Points de collecte visités</li>
+      <li>Vos informations de profil</li>
+    </ul>
+  </div>
+
+  <a href="/" class="btn">
+    🔄 Réessayer
+  </a>
+</body>
+</html>

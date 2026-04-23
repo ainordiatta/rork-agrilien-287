@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+    <!-- PWA Metadata -->
+    <meta name="theme-color" content="#1B6B2A" />
+    <meta name="description" content="La marketplace agricole du Sénégal et du Mali" />
+    <meta name="application-name" content="AgriLien" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Apple PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AgriLien" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AgriLien — Marketplace Agricole" />
+    <meta property="og:description" content="Achetez et vendez des produits agricoles au Sénégal et au Mali" />
+    <meta property="og:image" content="/icons/icon-512.svg" />
+
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="shortcut icon" href="/favicon.png" />
+
+    <!-- Leaflet CSS (pour la carte web) -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+
+    <title>AgriLien — Marketplace Agricole</title>
+
+    <style>
+      /* Évite le flash blanc au chargement */
+      html, body, #root {
+        height: 100%;
+        background-color: #F7F9FC;
+      }
+      /* Fix Leaflet dans react-native-web */
+      .leaflet-container {
+        width: 100%;
+        height: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Enregistrement du Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then(function (registration) {
+              console.log('[AgriLien SW] Enregistré :', registration.scope);
+            })
+            .catch(function (error) {
+              console.warn('[AgriLien SW] Échec :', error);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#1B6B2A"/>
+  <!-- Feuille principale -->
+  <path d="M256 100 C256 100 156 185 156 275 C156 338 200 392 256 400 C312 392 356 338 356 275 C356 185 256 100 256 100Z" fill="#2E8B3E"/>
+  <!-- Tige centrale -->
+  <path d="M256 400 L256 260" stroke="#F7F9FC" stroke-width="10" stroke-linecap="round"/>
+  <!-- Nervures gauche -->
+  <path d="M256 320 Q210 295 188 265" stroke="#F7F9FC" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M256 285 Q215 258 200 225" stroke="#F7F9FC" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <!-- Nervures droite -->
+  <path d="M256 320 Q302 295 324 265" stroke="#F7F9FC" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M256 285 Q297 258 312 225" stroke="#F7F9FC" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <!-- Soleil doré -->
+  <circle cx="256" cy="155" r="28" fill="#FFD23F" opacity="0.9"/>
+  <!-- Texte AgriLien -->
+  <text x="256" y="460" text-anchor="middle" fill="#F7F9FC" font-family="Arial, sans-serif" font-size="40" font-weight="bold" letter-spacing="2">AgriLien</text>
+</svg>
