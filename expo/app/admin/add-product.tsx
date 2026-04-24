@@ -1,17 +1,19 @@
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'expo-router';
-import { Save, ImagePlus, X, ChevronDown, Calendar } from 'lucide-react-native';
+import { Save, ImagePlus, X, ChevronDown, Calendar, Wand2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import Colors from '@/constants/colors';
 import { useInventory } from '@/contexts/InventoryContext';
 import { MeasurementUnit, ProductQuality, DeliveryOption } from '@/types';
 import { MEASUREMENT_UNITS, PRODUCT_QUALITY, DELIVERY_OPTIONS } from '@/constants/units';
+import { useApp } from '@/contexts/AppContext';
 
 export default function AddProductScreen() {
   const router = useRouter();
   const { addProduct, categories, getSubcategoriesForCategory } = useInventory();
+  const { user, updateUser } = useApp();
   
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -32,6 +34,7 @@ export default function AddProductScreen() {
   const [unitModalVisible, setUnitModalVisible] = useState<boolean>(false);
   const [qualityModalVisible, setQualityModalVisible] = useState<boolean>(false);
   const [deliveryModalVisible, setDeliveryModalVisible] = useState<boolean>(false);
+  const [isAIGenerating, setIsAIGenerating] = useState<boolean>(false);
 
   const availableSubcategories = useMemo(() => {
     return getSubcategoriesForCategory(category);
@@ -128,6 +131,43 @@ export default function AddProductScreen() {
     }
   };
 
+  const handleAIGeneration = () => {
+    if (!user) return;
+    
+    // Check Freemium logic
+    const generationCount = user.aiGenerationsCount || 0;
+    if (!user.isPremium && generationCount >= 3) {
+      Alert.alert(
+        'Limite atteinte',
+        'Vous avez utilisé vos 3 générations gratuites. Passez à AgriLien Premium pour générer en illimité.',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          { text: 'Devenir Premium', onPress: () => router.push('/premium') }
+        ]
+      );
+      return;
+    }
+
+    setIsAIGenerating(true);
+    // Simulate AI generation delay
+    setTimeout(() => {
+      setName('Mangues Kent Extra (Bio)');
+      setDescription('Mangues juteuses et sucrées de la région des Niayes. Parfaites pour l\'exportation ou la consommation locale. Récoltées le matin même pour une fraîcheur optimale.');
+      setPrice('2500');
+      setQuantity('150');
+      setCategory('Fruits');
+      setUnit('kg');
+      
+      // Update generation count for free users
+      if (!user.isPremium) {
+        updateUser({ ...user, aiGenerationsCount: generationCount + 1 });
+      }
+      
+      setIsAIGenerating(false);
+      Alert.alert('Succès', 'Votre fiche produit a été générée par l\'IA avec succès !');
+    }, 2500);
+  };
+
   const handleCategorySelect = (categoryName: string) => {
     setCategory(categoryName);
     setSubcategory('');
@@ -150,6 +190,27 @@ export default function AddProductScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+      
+      {/* AI Generator Banner */}
+      <TouchableOpacity 
+        style={styles.aiBanner} 
+        onPress={handleAIGeneration}
+        disabled={isAIGenerating}
+        activeOpacity={0.8}
+      >
+        <View style={styles.aiBannerIcon}>
+          <Wand2 size={24} color="#FFD700" />
+        </View>
+        <View style={styles.aiBannerTextContainer}>
+          <Text style={styles.aiBannerTitle}>Générer avec l'IA</Text>
+          <Text style={styles.aiBannerSubtitle}>
+            {isAIGenerating 
+              ? 'Analyse en cours...' 
+              : (!user?.isPremium ? `Il vous reste ${3 - (user?.aiGenerationsCount || 0)} essai(s) gratuit(s)` : 'Génération illimitée avec Premium')}
+          </Text>
+        </View>
+      </TouchableOpacity>
+
       <View style={styles.form}>
         <View style={styles.field}>
           <Text style={styles.label}>Photo(s) du produit</Text>
@@ -593,6 +654,36 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 24,
+  },
+  aiBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    gap: 16,
+  },
+  aiBannerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiBannerTextContainer: {
+    flex: 1,
+  },
+  aiBannerTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  aiBannerSubtitle: {
+    color: '#94A3B8',
+    fontSize: 12,
   },
   form: {
     gap: 20,

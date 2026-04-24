@@ -14,6 +14,8 @@ export interface User {
   id: string;
   role: UserRole;
   isSuperAdmin?: boolean;
+  isPremium?: boolean;
+  aiGenerationsCount?: number;
   email: string;
   phone: string;
   firstName?: string;

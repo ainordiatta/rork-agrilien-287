@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView, Modal } from 'react-native';
-import { Minus, Plus, Trash2, MapPin, ChevronDown, Truck, CreditCard } from 'lucide-react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView, Modal, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { Minus, Plus, Trash2, MapPin, ChevronDown, Truck, CreditCard, Smartphone } from 'lucide-react-native';
 import { useState, useMemo } from 'react';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -13,7 +13,9 @@ export default function CartScreen() {
   const [showRegionModal, setShowRegionModal] = useState<boolean>(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('orange_money');
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
-
+  const [showOMModal, setShowOMModal] = useState<boolean>(false);
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const deliveryFees = selectedCountry === 'senegal' ? DELIVERY_FEES_SENEGAL : DELIVERY_FEES_MALI;
   const regions = useMemo(() => deliveryFees.map((f) => f.region), [deliveryFees]);
 
@@ -45,6 +47,25 @@ export default function CartScreen() {
       </View>
     );
   }
+
+  const handleCheckout = () => {
+    if (paymentMethod === 'orange_money' || paymentMethod === 'wave') {
+      setShowOMModal(true);
+    } else {
+      processOrder();
+    }
+  };
+
+  const processOrder = () => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      setIsProcessing(false);
+      setShowOMModal(false);
+      Alert.alert('Succès', 'Votre commande a été passée avec succès !', [
+        { text: 'OK', onPress: () => clearCart() }
+      ]);
+    }, 3000);
+  };
 
   return (
     <View style={styles.container}>
@@ -146,6 +167,7 @@ export default function CartScreen() {
           style={[styles.checkoutButton, !selectedRegion && styles.checkoutButtonDisabled]}
           activeOpacity={0.8}
           disabled={!selectedRegion}
+          onPress={handleCheckout}
         >
           <Text style={styles.checkoutButtonText}>Commander</Text>
         </TouchableOpacity>
@@ -239,6 +261,69 @@ export default function CartScreen() {
             >
               <Text style={styles.modalCloseButtonText}>Annuler</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showOMModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => !isProcessing && setShowOMModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.omModalContent}>
+            {isProcessing ? (
+              <View style={styles.processingContainer}>
+                <ActivityIndicator size="large" color={paymentMethod === 'orange_money' ? '#FF6600' : '#1CA3F3'} />
+                <Text style={styles.processingTitle}>En attente de validation</Text>
+                <Text style={styles.processingText}>
+                  Veuillez confirmer le paiement de {formatPrice(total, 'XOF')} sur votre téléphone...
+                </Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.omHeader}>
+                  <Smartphone size={32} color={paymentMethod === 'orange_money' ? '#FF6600' : '#1CA3F3'} />
+                  <Text style={styles.omTitle}>
+                    Paiement {paymentMethod === 'orange_money' ? 'Orange Money' : 'Wave'}
+                  </Text>
+                </View>
+                
+                <Text style={styles.omAmount}>{formatPrice(total, 'XOF')}</Text>
+
+                <View style={styles.omInputContainer}>
+                  <Text style={styles.omLabel}>Numéro de téléphone</Text>
+                  <TextInput
+                    style={styles.omInput}
+                    placeholder="Ex: 77 123 45 67"
+                    keyboardType="phone-pad"
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                  />
+                </View>
+
+                <View style={styles.omActions}>
+                  <TouchableOpacity 
+                    style={styles.omCancelBtn} 
+                    onPress={() => setShowOMModal(false)}
+                  >
+                    <Text style={styles.omCancelBtnText}>Annuler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[
+                      styles.omConfirmBtn, 
+                      (!phoneNumber || phoneNumber.length < 8) && styles.omConfirmBtnDisabled,
+                      { backgroundColor: paymentMethod === 'orange_money' ? '#FF6600' : '#1CA3F3' }
+                    ]} 
+                    onPress={processOrder}
+                    disabled={!phoneNumber || phoneNumber.length < 8}
+                  >
+                    <Text style={styles.omConfirmBtnText}>Payer</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -492,4 +577,94 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontWeight: '600' as const,
   },
+  omModalContent: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    minHeight: 350,
+  },
+  omHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 24,
+  },
+  omTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text,
+  },
+  omAmount: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  omInputContainer: {
+    marginBottom: 32,
+  },
+  omLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  omInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 18,
+    backgroundColor: Colors.background,
+  },
+  omActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  omCancelBtn: {
+    flex: 1,
+    padding: 16,
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+  },
+  omCancelBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  omConfirmBtn: {
+    flex: 2,
+    padding: 16,
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  omConfirmBtnDisabled: {
+    opacity: 0.5,
+  },
+  omConfirmBtnText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: Colors.surface,
+  },
+  processingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  processingTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  processingText: {
+    textAlign: 'center',
+    color: Colors.textSecondary,
+    lineHeight: 24,
+  }
 });
