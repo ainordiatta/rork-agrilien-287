@@ -78,9 +78,18 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
       const current = queryClient.getQueryData<AppNotification[]>(QUERY_KEY) ?? [];
       saveMutation.mutate([newNotif, ...current.slice(0, 99)]);
       console.log('[Notifications] Added:', title);
+
+      // #6 Notifications push simulées via HTML5 Notification API
+      if (Platform.OS === 'web' && pushEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification(title, {
+          body,
+          icon: '/favicon.ico',
+        });
+      }
+
       return newNotif;
     },
-    [queryClient, saveMutation]
+    [queryClient, saveMutation, pushEnabled]
   );
 
   const markAsRead = useCallback(
@@ -114,9 +123,24 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
 
   const togglePushNotifications = useCallback(async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('Info', 'Les notifications push ne sont pas disponibles sur le web.');
+      if (typeof Notification === 'undefined') {
+        Alert.alert('Info', 'Les notifications ne sont pas supportées par ce navigateur.');
+        return;
+      }
+      if (!pushEnabled) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          setPushEnabled(true);
+          new Notification('Notifications activées', { body: 'Vous recevrez désormais nos alertes.' });
+        } else {
+          Alert.alert('Info', 'Permission refusée par le navigateur.');
+        }
+      } else {
+        setPushEnabled(false);
+      }
       return;
     }
+    
     setPushEnabled(prev => !prev);
     Alert.alert(
       'Notifications',

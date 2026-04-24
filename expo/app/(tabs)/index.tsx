@@ -22,6 +22,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useInventory } from '@/contexts/InventoryContext';
 import { useStories } from '@/contexts/StoriesContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useOffline } from '@/contexts/OfflineContext';
 import { mockProducts, mockShops, formatPrice } from '@/mocks/data';
 import { MEASUREMENT_UNITS } from '@/constants/units';
 import { Product, Shop, DeliveryMethod } from '@/types';
@@ -29,8 +30,7 @@ import React from 'react';
 import HeroSection from '@/components/HeroSection';
 import { SkeletonGrid } from '@/components/SkeletonCard';
 import { useTheme } from '@/contexts/ThemeContext';
-
-
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -41,12 +41,13 @@ export default function HomeScreen() {
   const isDesktop = screenWidth >= 768;
   const DRAWER_WIDTH = screenWidth * 0.75;
   const { colors } = useTheme();
-
+  const { t } = useI18n();
 
   const { selectedCountry, updateCountry, user } = useApp();
   const { products, transactions } = useInventory();
   const { groupedStories, myStories } = useStories();
   const { unreadCount: notifUnreadCount } = useNotifications();
+  const { isOnline } = useOffline();
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [expandedDrawerCategories, setExpandedDrawerCategories] = useState<Set<string>>(new Set());
@@ -350,6 +351,13 @@ export default function HomeScreen() {
       {/* #2 Hero section pour les visiteurs non connectés */}
       {!user && <HeroSection />}
 
+      {/* #8 Bannière Offline */}
+      {!isOnline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>{t('offline.banner')}</Text>
+        </View>
+      )}
+
       {/* #1 Grille responsive avec skeleton (#4) */}
       {isLoading ? (
         <SkeletonGrid count={numCols * 2} />
@@ -371,7 +379,7 @@ export default function HomeScreen() {
             <View style={styles.shopDashboard}>
               <View style={styles.searchBar}>
                 <Search size={20} color={Colors.magenta} />
-                <Text style={styles.searchPlaceholder}>Rechercher un produit, une exploitation</Text>
+                <Text style={styles.searchPlaceholder}>{t('home.searchPlaceholder')}</Text>
               </View>
 
               <View style={styles.storiesSection}>
@@ -521,9 +529,8 @@ export default function HomeScreen() {
                   setSelectedCategory('Tous');
                   setSelectedSubcategory(null);
                 }}
-                activeOpacity={0.8}
               >
-                <Text style={styles.resetFilterButtonText}>Réinitialiser les filtres</Text>
+                <Text style={styles.resetFilterButtonText}>{t('common.buy')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1263,6 +1270,17 @@ const styles = StyleSheet.create({
     color: Colors.surface,
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  offlineBanner: {
+    backgroundColor: Colors.error,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  offlineText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   filterButtons: {
     flexDirection: 'row',

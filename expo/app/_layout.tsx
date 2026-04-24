@@ -16,6 +16,8 @@ import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { OrdersProvider } from "@/contexts/OrdersContext";
 import { OfflineProvider } from "@/contexts/OfflineContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { I18nProvider } from "@/contexts/I18nContext";
+import { PriceAlertsProvider } from "@/contexts/PriceAlertContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -99,9 +101,13 @@ function ThemedApp() {
                       <NotificationsProvider>
                         <OrdersProvider>
                           <OfflineProvider>
-                            <ErrorBoundary>
-                              <RootLayoutNav />
-                            </ErrorBoundary>
+                            <I18nProvider>
+                              <PriceAlertsProvider>
+                                <ErrorBoundary>
+                                  <RootLayoutNav />
+                                </ErrorBoundary>
+                              </PriceAlertsProvider>
+                            </I18nProvider>
                           </OfflineProvider>
                         </OrdersProvider>
                       </NotificationsProvider>

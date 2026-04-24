@@ -5,11 +5,12 @@ import { View, Text, StyleSheet } from 'react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function TabLayout() {
   const { cartItemCount } = useApp();
   const { colors } = useTheme();
+  const { t } = useI18n();
 
   return (
     <Tabs
@@ -31,21 +32,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Accueil',
+          title: t('nav.home'),
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Recherche',
+          title: t('nav.search'),
           tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Panier',
+          title: t('nav.cart'),
           tabBarIcon: ({ color, size }) => (
             <View>
               <ShoppingCart color={color} size={size} />
@@ -61,7 +62,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
+          title: t('nav.profile'),
           tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />

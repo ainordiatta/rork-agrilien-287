@@ -10,6 +10,7 @@ import { useMessages } from '@/contexts/MessagesContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { CATEGORIES } from '@/constants/categories';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 
 export default function ProfileScreen() {
@@ -17,6 +18,7 @@ export default function ProfileScreen() {
   const { totalUnreadCount } = useMessages();
   const { unreadCount: notifUnreadCount } = useNotifications();
   const { isDark, toggleTheme, colors } = useTheme();
+  const { language, changeLanguage, t } = useI18n();
   const router = useRouter();
 
   const [editModalVisible, setEditModalVisible] = React.useState(false);
@@ -337,16 +339,40 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* #3 Toggle Mode Sombre */}
+      {/* #3 Toggle Mode Sombre & Langue */}
       <View style={[styles.section, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Apparence</Text>
-        <View style={[styles.themeRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('profile.settings')}</Text>
+        
+        {/* Ligne Langue */}
+        <View style={[styles.themeRow, { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+          <View style={styles.themeRowLeft}>
+            <View style={[styles.themeIcon, { backgroundColor: '#F0F4FF' }]}>
+              <Globe size={20} color={Colors.primary} />
+            </View>
+            <View>
+              <Text style={[styles.themeLabel, { color: colors.text }]}>{t('profile.language')}</Text>
+              <Text style={[styles.themeSubLabel, { color: colors.textSecondary }]}>
+                {language === 'fr' ? 'Français' : 'Wolof'}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={language === 'wo'}
+            onValueChange={(val) => changeLanguage(val ? 'wo' : 'fr')}
+            trackColor={{ false: colors.border, true: Colors.primary + '80' }}
+            thumbColor={language === 'wo' ? Colors.primary : '#fff'}
+            ios_backgroundColor={colors.border}
+          />
+        </View>
+
+        {/* Ligne Mode Sombre */}
+        <View style={[styles.themeRow, { backgroundColor: colors.surface, borderTopWidth: 0 }]}>
           <View style={styles.themeRowLeft}>
             <View style={[styles.themeIcon, { backgroundColor: isDark ? '#1A1D27' : '#F0F4FF' }]}>
               <Moon size={20} color={isDark ? '#FFD23F' : colors.textSecondary} />
             </View>
             <View>
-              <Text style={[styles.themeLabel, { color: colors.text }]}>Mode sombre</Text>
+              <Text style={[styles.themeLabel, { color: colors.text }]}>{t('profile.theme')}</Text>
               <Text style={[styles.themeSubLabel, { color: colors.textSecondary }]}>
                 {isDark ? 'Activé' : 'Désactivé'}
               </Text>

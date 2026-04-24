@@ -22,6 +22,8 @@ import { useMessages } from '@/contexts/MessagesContext';
 import { useInventory } from '@/contexts/InventoryContext';
 import { useNegotiations } from '@/contexts/NegotiationsContext';
 import { useReviews } from '@/contexts/ReviewsContext';
+import { usePriceAlerts } from '@/contexts/PriceAlertContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { Product, InventoryProduct, User } from '@/types';
 
 const { width } = Dimensions.get('window');
@@ -34,6 +36,9 @@ export default function ProductDetailScreen() {
   const { createNegotiation } = useNegotiations();
   const { products: inventoryProducts } = useInventory();
   const { getProductReviews, getProductRating, addReview, hasUserReviewedProduct } = useReviews();
+  const { hasAlertForProduct, addAlert, removeAlert, alerts } = usePriceAlerts();
+  const { t } = useI18n();
+
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [reservationModalVisible, setReservationModalVisible] = useState<boolean>(false);
   const [reservationQuantity, setReservationQuantity] = useState<string>('1');
@@ -132,6 +137,32 @@ export default function ProductDetailScreen() {
     } catch {
       Alert.alert('Erreur', 'Impossible de créer la conversation');
     }
+  };
+
+  // #12 Alerte de prix
+  const handleTogglePriceAlert = () => {
+    if (!user) {
+      Alert.alert('Connexion requise', 'Veuillez vous connecter pour créer une alerte');
+      return;
+    }
+    const existing = alerts.find(a => a.productId === product!.id);
+    if (existing) {
+      removeAlert(existing.id);
+      Alert.alert('Alerte supprimée', 'L\'alerte de prix a été supprimée.');
+    } else {
+      // Create an alert 10% below current price just as a quick mockup interaction
+      const targetPrice = Math.floor(product!.price * 0.9);
+      addAlert(product!.id, product!.name, targetPrice, product!.currency);
+    }
+  };
+
+  // #11 Achat groupé
+  const handleJoinGroupBuy = () => {
+    if (!user) {
+      Alert.alert('Connexion requise', 'Veuillez vous connecter pour rejoindre l\'achat groupé');
+      return;
+    }
+    Alert.alert('Achat groupé', 'Vous avez rejoint le groupe ! Dès que la quantité cible est atteinte, la commande sera validée au prix préférentiel.');
   };
 
   const handleReservation = () => {
@@ -452,6 +483,49 @@ export default function ProductDetailScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          {/* #11 Achat groupé Mockup */}
+          {product.pricingModel !== 'fixed' && !isOwnShop && (
+            <View style={[styles.reservationCard, { borderColor: Colors.secondary, borderWidth: 1, marginTop: 16 }]}>
+              <View style={styles.reservationHeader}>
+                <Truck size={24} color={Colors.secondary} />
+                <Text style={[styles.reservationTitle, { color: Colors.secondary }]}>Achat Groupé en cours</Text>
+              </View>
+              <Text style={styles.reservationDescription}>
+                Prix cible : {formatPrice(product.price * 0.8, product.currency)} (20% de remise)
+              </Text>
+              <View style={styles.reservationInfo}>
+                <Text style={styles.reservationLabel}>Objectif :</Text>
+                <Text style={styles.reservationValue}>500 {product.unit}</Text>
+              </View>
+              <View style={styles.reservationInfo}>
+                <Text style={styles.reservationLabel}>Actuel :</Text>
+                <Text style={styles.reservationValue}>240 {product.unit}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.reservationButton, { backgroundColor: Colors.secondary }]}
+                onPress={handleJoinGroupBuy}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.reservationButtonText}>{t('common.joinGroupBuy')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* #12 Alerte de prix Bouton */}
+          {!isOwnShop && (
+            <TouchableOpacity
+              style={[styles.negotiationButton, { backgroundColor: hasAlertForProduct(product.id) ? Colors.error : Colors.info, marginTop: 16 }]}
+              onPress={handleTogglePriceAlert}
+              activeOpacity={0.8}
+            >
+              <Bell size={20} color={Colors.surface} />
+              <Text style={styles.negotiationButtonText}>
+                {hasAlertForProduct(product.id) ? 'Désactiver l\'alerte de prix' : 'Créer une alerte de prix (-10%)'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
 
           {product.availableForReservation && (
             <View style={styles.reservationCard}>
