@@ -1,6 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Linking, Platform } from 'react-native';
-import { Star, Zap, Package, Share2 } from 'lucide-react-native';
+import { Star, Zap, Package, Share2, ShieldCheck } from 'lucide-react-native';
+
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/colors';
 import { Product } from '@/types';
@@ -85,7 +86,15 @@ const ProductCard = React.memo(({ item, distanceKm }: ProductCardProps) => {
           <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
 
           <TouchableOpacity style={styles.shopInfo} onPress={handleShopPress}>
-            <Text style={styles.shopName} numberOfLines={1}>{item.shop.name}</Text>
+            <View style={styles.shopNameRow}>
+              <Text style={styles.shopName} numberOfLines={1}>{item.shop.name}</Text>
+              {/* #18 Badge Producteur Certifié */}
+              {item.shop.rating >= 4.5 && item.shop.reviewCount >= 5 && (
+                <View style={styles.certBadge}>
+                  <ShieldCheck size={11} color="#fff" />
+                </View>
+              )}
+            </View>
             <View style={styles.rating}>
               <Star size={12} color={Colors.warning} fill={Colors.warning} />
               <Text style={styles.ratingText}>{item.shop.rating.toFixed(1)}</Text>
@@ -217,10 +226,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
+  shopNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
   shopName: {
     fontSize: 12,
     color: Colors.textSecondary,
-    flex: 1,
+    flexShrink: 1,
+  },
+  certBadge: {
+    backgroundColor: '#F59E0B',
+    borderRadius: 10,
+    padding: 2,
   },
   rating: {
     flexDirection: 'row',

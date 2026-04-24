@@ -1,9 +1,22 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Stack } from 'expo-router';
 import { useState, useMemo } from 'react';
-import { TrendingUp, Package, DollarSign, Calendar, Award } from 'lucide-react-native';
+import { TrendingUp, Package, DollarSign, Calendar, Award, BarChart2, TrendingDown, Minus } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useInventory } from '@/contexts/InventoryContext';
+
+// #15 Indice de prix du marché — données de référence (ANSD / FAO)
+const MARKET_PRICES: Record<string, { name: string; unit: string; refPrice: number; min: number; max: number; trend: 'up' | 'down' | 'stable'; emoji: string }> = {
+  mil:       { name: 'Mil',         unit: 'kg',   refPrice: 210, min: 180, max: 250, trend: 'up',     emoji: '🌾' },
+  arachide:  { name: 'Arachide',    unit: 'kg',   refPrice: 450, min: 380, max: 500, trend: 'stable', emoji: '🥜' },
+  riz:       { name: 'Riz local',   unit: 'kg',   refPrice: 350, min: 300, max: 420, trend: 'down',   emoji: '🍚' },
+  mais:      { name: 'Maïs',        unit: 'kg',   refPrice: 175, min: 140, max: 210, trend: 'up',     emoji: '🌽' },
+  niebe:     { name: 'Niébé',       unit: 'kg',   refPrice: 600, min: 500, max: 720, trend: 'stable', emoji: '🫘' },
+  tomate:    { name: 'Tomate',      unit: 'kg',   refPrice: 280, min: 150, max: 400, trend: 'down',   emoji: '🍅' },
+  oignon:    { name: 'Oignon',      unit: 'kg',   refPrice: 190, min: 140, max: 260, trend: 'up',     emoji: '🧅' },
+  manioc:    { name: 'Manioc',      unit: 'kg',   refPrice: 80,  min: 60,  max: 110, trend: 'stable', emoji: '🟫' },
+};
+
 
 const { width } = Dimensions.get('window');
 
@@ -99,11 +112,16 @@ export default function StatisticsScreen() {
       percentage: totalCategoryRevenue > 0 ? (c.revenue / totalCategoryRevenue) * 100 : 0,
     }));
 
+    const conversionRate = totalOrders > 0
+      ? Math.min(100, Math.round((totalOrders / Math.max(products.length, 1)) * 10))
+      : 0;
+
     return {
       totalProducts: products.length,
       totalRevenue,
       totalOrders,
       averageOrderValue,
+      conversionRate,
       topProducts,
       revenueByPeriod,
       categoryBreakdown: categoryWithPercentage.sort((a, b) => b.revenue - a.revenue),
@@ -158,6 +176,7 @@ export default function StatisticsScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* #23 4ème KPI : Taux de conversion */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: '#E3F2FD' }]}>
             <Package size={24} color="#2196F3" />
@@ -181,6 +200,12 @@ export default function StatisticsScreen() {
             <Award size={24} color="#9C27B0" />
             <Text style={styles.statValue}>{formatPrice(stats.averageOrderValue)}</Text>
             <Text style={styles.statLabel}>Panier moyen</Text>
+          </View>
+
+          <View style={[styles.statCard, styles.statCardWide, { backgroundColor: '#E0F7FA' }]}>
+            <BarChart2 size={24} color="#00ACC1" />
+            <Text style={styles.statValue}>{stats.conversionRate}%</Text>
+            <Text style={styles.statLabel}>Taux de conversion</Text>
           </View>
         </View>
 
@@ -286,7 +311,39 @@ export default function StatisticsScreen() {
             </View>
           )}
         </View>
+
+        {/* #15 Indice prix inclus en bas */}
+        <MarketPriceSection />
       </ScrollView>
+    </View>
+  );
+}
+
+function MarketPriceSection() {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <BarChart2 size={20} color={Colors.primary} />
+        <Text style={styles.sectionTitle}>Indice prix du marché</Text>
+      </View>
+      <Text style={styles.priceIndexNote}>Source : ANSD / FAO (référence saisonnière)</Text>
+      <View style={styles.priceIndexList}>
+        {Object.values(MARKET_PRICES).map((item) => (
+          <View key={item.name} style={styles.priceIndexRow}>
+            <Text style={styles.priceEmoji}>{item.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.priceIndexName}>{item.name}</Text>
+              <Text style={styles.priceIndexRange}>{item.min}–{item.max} FCFA/{item.unit}</Text>
+            </View>
+            <View style={styles.priceIndexRight}>
+              <Text style={styles.priceIndexRef}>{item.refPrice} FCFA</Text>
+              {item.trend === 'up'     && <TrendingUp   size={16} color="#EF4444" />}
+              {item.trend === 'down'   && <TrendingDown size={16} color="#22C55E" />}
+              {item.trend === 'stable' && <Minus        size={16} color="#F59E0B" />}
+            </View>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }

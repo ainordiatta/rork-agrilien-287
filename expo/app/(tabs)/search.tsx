@@ -1,11 +1,14 @@
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
 import { useState, useMemo, useCallback } from 'react';
-import { Search, SlidersHorizontal, Tag, Truck, ShoppingBag, Leaf, ChevronDown, ChevronUp, X, ArrowUpDown } from 'lucide-react-native';
+import { Search, SlidersHorizontal, Tag, Truck, ShoppingBag, Leaf, ChevronDown, ChevronUp, X, ArrowUpDown, Clock, TrendingUp } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { CATEGORIES } from '@/constants/categories';
 import { SPECIALTIES } from '@/constants/specialties';
 import Colors from '@/constants/colors';
+import { mockProducts } from '@/mocks/data';
+
 
 type FilterOption = {
   label: string;
@@ -50,7 +53,11 @@ type SectionKey = 'categories' | 'price' | 'availability' | 'quality' | 'deliver
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [searchText, setSearchText] = useState<string>('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(['mil', 'arachide', 'Dakar']);
+
   const [selectedCategorie, setSelectedCategorie] = useState<string>('');
   const [selectedSubcategorie, setSelectedSubcategorie] = useState<string>('');
   const [prixMin, setPrixMin] = useState<string>('');
@@ -73,8 +80,36 @@ export default function SearchScreen() {
     specialties: false,
   });
 
+  // #20 Suggestions d'autocomplétion
+  const suggestions = useMemo(() => {
+    if (searchText.trim().length < 2) return [];
+    const q = searchText.toLowerCase();
+    const productMatches = mockProducts
+      .filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+      .slice(0, 4)
+      .map(p => ({ label: p.name, type: 'produit' as const, category: p.category }));
+    const cityMatches = ['Dakar', 'Thiès', 'Saint-Louis', 'Kaolack', 'Ziguinchor', 'Bamako', 'Ségou', 'Sikasso']
+      .filter(c => c.toLowerCase().includes(q))
+      .slice(0, 2)
+      .map(c => ({ label: c, type: 'ville' as const, category: '' }));
+    const catMatches = CATEGORIES
+      .filter(c => c.name.toLowerCase().includes(q))
+      .slice(0, 2)
+      .map(c => ({ label: c.name, type: 'catégorie' as const, category: '' }));
+    return [...productMatches, ...cityMatches, ...catMatches].slice(0, 7);
+  }, [searchText]);
+
+  const handleSelectSuggestion = (label: string) => {
+    setSearchText(label);
+    setShowSuggestions(false);
+    if (!recentSearches.includes(label)) {
+      setRecentSearches(prev => [label, ...prev].slice(0, 5));
+    }
+  };
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
+
     if (selectedCategorie) count++;
     if (selectedSubcategorie) count++;
     if (prixMin || prixMax) count++;
@@ -212,14 +247,48 @@ export default function SearchScreen() {
             placeholder="Rechercher un produit, une ville..."
             placeholderTextColor={Colors.textSecondary}
             value={searchText}
-            onChangeText={setSearchText}
+            onChangeText={(t) => { setSearchText(t); setShowSuggestions(t.length >= 2); }}
+            onFocus={() => setShowSuggestions(searchText.length >= 2)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
           />
           {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchText('')}>
+            <TouchableOpacity onPress={() => { setSearchText(''); setShowSuggestions(false); }}>
               <X size={18} color={Colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
+
+        {/* #20 Dropdown Autocomplete */}
+        {showSuggestions && suggestions.length > 0 && (
+          <View style={styles.suggestionsBox}>
+            {suggestions.map((s, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[styles.suggestionItem, i > 0 && styles.suggestionBorder]}
+                onPress={() => handleSelectSuggestion(s.label)}
+                activeOpacity={0.7}
+              >
+                <Search size={14} color="rgba(255,255,255,0.6)" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.suggestionLabel}>{s.label}</Text>
+                </View>
+                <Text style={styles.suggestionType}>{s.type}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Recherches récentes (quand champ vide et focus) */}
+        {!showSuggestions && searchText.length === 0 && recentSearches.length > 0 && (
+          <View style={styles.recentRow}>
+            <Clock size={13} color="rgba(255,255,255,0.7)" />
+            {recentSearches.slice(0, 4).map((r, i) => (
+              <TouchableOpacity key={i} onPress={() => setSearchText(r)} style={styles.recentChip}>
+                <Text style={styles.recentChipText}>{r}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {activeFilterCount > 0 && (
           <View style={styles.activeFiltersRow}>
@@ -470,7 +539,53 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.text,
   },
+  suggestionsBox: {
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    borderRadius: 12,
+    marginTop: 6,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  suggestionBorder: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+  },
+  suggestionLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  suggestionType: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.5)',
+    textTransform: 'capitalize',
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 10,
+  },
+  recentChip: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  recentChipText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
   activeFiltersRow: {
+
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
