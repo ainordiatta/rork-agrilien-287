@@ -555,6 +555,7 @@ export default function HomeScreen() {
             style={[
               styles.drawer,
               {
+                width: DRAWER_WIDTH,
                 transform: [{ translateX: drawerAnimation }],
                 paddingTop: insets.top,
               },
@@ -758,7 +759,6 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: DRAWER_WIDTH,
     backgroundColor: Colors.surface,
     elevation: 16,
     shadowColor: '#000',
