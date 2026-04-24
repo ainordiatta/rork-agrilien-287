@@ -1,13 +1,15 @@
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Modal, Pressable, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Modal, Pressable, StatusBar, ActivityIndicator, Alert, Animated } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Trash2 } from 'lucide-react-native';
+import { X, Trash2, Eye, ExternalLink } from 'lucide-react-native';
 import { ResizeMode, Video } from 'expo-av';
 import Colors from '@/constants/colors';
 import { useStories } from '@/contexts/StoriesContext';
 import { ShopWithStories, Story } from '@/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const STORY_DURATION = 5000; // 5 secondes par story
+
 
 export default function StoryViewerScreen() {
   const router = useRouter();
@@ -17,8 +19,13 @@ export default function StoryViewerScreen() {
   const [currentStoryIndex, setCurrentStoryIndex] = useState<number>(0);
   const [isClosing, setIsClosing] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const videoRef = useRef<Video>(null);
   const hasCleanedUp = useRef<boolean>(false);
+  // #25 Barre de progression animée
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const progressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   const currentShop: ShopWithStories | undefined = groupedStories[currentShopIndex];
   const currentStory: Story | undefined = currentShop?.stories[currentStoryIndex];
@@ -67,8 +74,30 @@ export default function StoryViewerScreen() {
   useEffect(() => {
     if (currentStory && !currentStory.viewed) {
       markStoryAsViewed(currentStory.id);
+      // #25 Incrémenter compteur de vues
+      setViewCounts(prev => ({
+        ...prev,
+        [currentStory.id]: (prev[currentStory.id] || 0) + 1,
+      }));
     }
-  }, [currentStory, markStoryAsViewed]);
+
+    // #25 Lancer la barre de progression animée
+    if (currentStory && !isTransitioning && !isClosing) {
+      progressAnim.setValue(0);
+      const anim = Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: STORY_DURATION,
+        useNativeDriver: false,
+      });
+      anim.start(({ finished }) => {
+        if (finished && !isClosing && !isTransitioning) {
+          void handleNext();
+        }
+      });
+      return () => anim.stop();
+    }
+  }, [currentStory, markStoryAsViewed, isTransitioning, isClosing]);
+
 
   const handleNext = useCallback(async () => {
     if (isClosing || isTransitioning) {
@@ -227,16 +256,21 @@ export default function StoryViewerScreen() {
 
         <View style={styles.overlay}>
           <View style={styles.header}>
+            {/* #25 Barre de progression animée */}
             <View style={styles.progressContainer}>
               {currentShop.stories.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.progressBar,
-                    index < currentStoryIndex && styles.progressBarComplete,
-                    index === currentStoryIndex && styles.progressBarActive,
-                  ]}
-                />
+                <View key={index} style={styles.progressBarTrack}>
+                  {index < currentStoryIndex ? (
+                    <View style={[styles.progressBarFill, { width: '100%' }]} />
+                  ) : index === currentStoryIndex ? (
+                    <Animated.View
+                      style={[
+                        styles.progressBarFill,
+                        { width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) },
+                      ]}
+                    />
+                  ) : null}
+                </View>
               ))}
             </View>
 
@@ -249,7 +283,18 @@ export default function StoryViewerScreen() {
                 </View>
                 <View>
                   <Text style={styles.shopName}>{currentShop.shopName}</Text>
-                  <Text style={styles.storyTime}>{getTimeAgo(currentStory.createdAt)}</Text>
+                  <View style={styles.storyMeta}>
+                    <Text style={styles.storyTime}>{getTimeAgo(currentStory.createdAt)}</Text>
+                    {/* #25 Compteur de vues */}
+                    {isMyStory && (
+                      <View style={styles.viewCount}>
+                        <Eye size={11} color="rgba(255,255,255,0.8)" />
+                        <Text style={styles.viewCountText}>
+                          {viewCounts[currentStory.id] || 0}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
               <View style={styles.headerActions}>
@@ -274,16 +319,26 @@ export default function StoryViewerScreen() {
           </View>
 
           <View style={styles.touchAreas}>
-            <Pressable
-              style={styles.leftTouchArea}
-              onPress={handlePrevious}
-            />
-            <Pressable
-              style={styles.rightTouchArea}
-              onPress={handleNext}
-            />
+            <Pressable style={styles.leftTouchArea} onPress={handlePrevious} />
+            <Pressable style={styles.rightTouchArea} onPress={handleNext} />
           </View>
+
+          {/* #25 Lien produit en bas si disponible */}
+          {(currentStory as any).productId && (
+            <TouchableOpacity
+              style={styles.productLink}
+              onPress={() => {
+                void cleanupAndClose();
+                router.push(`/product/${(currentStory as any).productId}` as any);
+              }}
+              activeOpacity={0.85}
+            >
+              <ExternalLink size={16} color="#fff" />
+              <Text style={styles.productLinkText}>Voir le produit</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
       </View>
     </Modal>
   );
@@ -327,18 +382,19 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: 12,
   },
-  progressBar: {
+  progressBarTrack: {
     flex: 1,
     height: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#fff',
     borderRadius: 2,
   },
-  progressBarComplete: {
-    backgroundColor: Colors.surface,
-  },
-  progressBarActive: {
-    backgroundColor: Colors.surface,
-  },
+
   shopInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -373,6 +429,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
   },
+  storyMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  viewCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  viewCountText: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
+  },
+
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -388,11 +464,28 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
   },
-  leftTouchArea: {
-    flex: 1,
+  leftTouchArea: { flex: 1 },
+  rightTouchArea: { flex: 1 },
+  productLink: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  rightTouchArea: {
-    flex: 1,
+  productLinkText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
   loadingContainer: {
     width: SCREEN_WIDTH,

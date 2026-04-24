@@ -1,13 +1,16 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Package, CheckCircle, Truck, Clock, XCircle, MapPin, CreditCard, Copy } from 'lucide-react-native';
-import { useMemo, useCallback } from 'react';
+import { Package, CheckCircle, Truck, Clock, XCircle, MapPin, CreditCard, Copy, FileText, Share2 } from 'lucide-react-native';
+import { useMemo, useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { Platform, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import Colors from '@/constants/colors';
 import { useOrders, OrderTimelineEvent } from '@/contexts/OrdersContext';
 import { formatPrice } from '@/mocks/data';
 import { OrderStatus } from '@/types';
+import { generateAndDownloadPDF, shareInvoiceWhatsApp } from '@/lib/generatePdf';
+import { useApp } from '@/contexts/AppContext';
+
 
 const STATUS_ICONS: Record<OrderStatus, typeof Package> = {
   pending: Clock,
@@ -20,6 +23,8 @@ const STATUS_ICONS: Record<OrderStatus, typeof Package> = {
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { orders, getOrderTracking } = useOrders();
+  const { user } = useApp();
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   const order = useMemo(() => orders.find(o => o.id === id), [orders, id]);
   const tracking = useMemo(() => id ? getOrderTracking(id) : null, [id, getOrderTracking]);
@@ -32,6 +37,55 @@ export default function OrderDetailScreen() {
       Alert.alert('Copié', `Code de suivi: ${tracking.trackingCode}`);
     }
   }, [tracking]);
+
+  const handleDownloadPDF = useCallback(async () => {
+    if (!order) return;
+    setGeneratingPDF(true);
+    try {
+      await generateAndDownloadPDF({
+        orderId: order.id,
+        date: order.createdAt,
+        buyerName: user?.name || 'Client AgriLien',
+        items: order.items.map(item => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price,
+          currency: item.product.currency,
+        })),
+        subtotal: order.subtotal,
+        deliveryFee: order.deliveryFee,
+        total: order.total,
+        currency: order.currency,
+        paymentMethod: order.paymentMethod,
+        deliveryAddress: order.deliveryAddress,
+      });
+    } catch (e) {
+      Alert.alert('Erreur', 'Impossible de générer la facture');
+    } finally {
+      setGeneratingPDF(false);
+    }
+  }, [order, user]);
+
+  const handleShareWhatsApp = useCallback(() => {
+    if (!order) return;
+    shareInvoiceWhatsApp({
+      orderId: order.id,
+      date: order.createdAt,
+      buyerName: user?.name || 'Client AgriLien',
+      items: order.items.map(item => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+        currency: item.product.currency,
+      })),
+      subtotal: order.subtotal,
+      deliveryFee: order.deliveryFee,
+      total: order.total,
+      currency: order.currency,
+      paymentMethod: order.paymentMethod,
+    });
+  }, [order, user]);
+
 
   if (!order || !tracking) {
     return (
@@ -180,6 +234,29 @@ export default function OrderDetailScreen() {
               </Text>
             </View>
           </View>
+        </View>
+        {/* #13 Boutons Facture PDF + WhatsApp */}
+        <View style={styles.invoiceActions}>
+          <TouchableOpacity
+            style={styles.invoiceBtn}
+            onPress={handleDownloadPDF}
+            activeOpacity={0.8}
+            disabled={generatingPDF}
+          >
+            <FileText size={18} color="#fff" />
+            <Text style={styles.invoiceBtnText}>
+              {generatingPDF ? 'Génération…' : 'Télécharger la facture'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.whatsappBtn}
+            onPress={handleShareWhatsApp}
+            activeOpacity={0.8}
+          >
+            <Share2 size={18} color="#25D366" />
+            <Text style={styles.whatsappBtnText}>Partager WhatsApp</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -407,5 +484,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text,
     flex: 1,
+  },
+  invoiceActions: {
+    flexDirection: 'column',
+    gap: 10,
+    paddingHorizontal: 0,
+    paddingBottom: 16,
+  },
+  invoiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  invoiceBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  whatsappBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#25D366',
+  },
+  whatsappBtnText: {
+    color: '#25D366',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });
