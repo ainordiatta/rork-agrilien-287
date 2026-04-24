@@ -28,6 +28,8 @@ import { Product, Shop, DeliveryMethod } from '@/types';
 import React from 'react';
 import HeroSection from '@/components/HeroSection';
 import { SkeletonGrid } from '@/components/SkeletonCard';
+import { useTheme } from '@/contexts/ThemeContext';
+
 
 
 export default function HomeScreen() {
@@ -38,6 +40,8 @@ export default function HomeScreen() {
   const numCols = screenWidth >= 1024 ? 4 : screenWidth >= 768 ? 3 : 2;
   const isDesktop = screenWidth >= 768;
   const DRAWER_WIDTH = screenWidth * 0.75;
+  const { colors } = useTheme();
+
 
   const { selectedCountry, updateCountry, user } = useApp();
   const { products, transactions } = useInventory();
@@ -305,9 +309,10 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
+
           <TouchableOpacity
             style={styles.menuButton}
             onPress={openDrawer}

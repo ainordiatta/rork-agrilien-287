@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, TextInput, Modal, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MapPin, Mail, Phone, LogOut, RefreshCw, Settings, MessageCircle, Camera, Edit, Trash2, Eye, EyeOff, Save, X, Grid3x3, ChevronRight, Globe, BarChart3, Package, Bell, ShieldCheck, FileText, Shield } from 'lucide-react-native';
+import { MapPin, Mail, Phone, LogOut, RefreshCw, Settings, MessageCircle, Camera, Edit, Trash2, Eye, EyeOff, Save, X, Grid3x3, ChevronRight, Globe, BarChart3, Package, Bell, ShieldCheck, FileText, Shield, Moon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/colors';
@@ -9,12 +9,16 @@ import { useApp } from '@/contexts/AppContext';
 import { useMessages } from '@/contexts/MessagesContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { CATEGORIES } from '@/constants/categories';
+import { useTheme } from '@/contexts/ThemeContext';
+
 
 export default function ProfileScreen() {
   const { user, selectedCountry, logout, updateUser, updateCountry } = useApp();
   const { totalUnreadCount } = useMessages();
   const { unreadCount: notifUnreadCount } = useNotifications();
+  const { isDark, toggleTheme, colors } = useTheme();
   const router = useRouter();
+
   const [editModalVisible, setEditModalVisible] = React.useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = React.useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = React.useState(false);
@@ -123,8 +127,9 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface }]}>
+
         <View style={styles.avatarContainer}>
           {user && (user.role === 'producteur' ? user.shopPhoto : user.photo) ? (
             <Image 
@@ -323,12 +328,37 @@ export default function ProfileScreen() {
             </>
           )}
 
-          <TouchableOpacity style={styles.switchButton} onPress={handleSwitchRole} activeOpacity={0.8}>
-            <RefreshCw size={20} color={Colors.primary} />
-            <Text style={styles.switchText}>
+          <TouchableOpacity style={[styles.switchButton, { backgroundColor: colors.surface, borderColor: colors.primary }]} onPress={handleSwitchRole} activeOpacity={0.8}>
+            <RefreshCw size={20} color={colors.primary} />
+            <Text style={[styles.switchText, { color: colors.primary }]}>
               Passer en mode {user?.role === 'acheteur' ? 'Producteur' : 'Acheteur'}
             </Text>
           </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* #3 Toggle Mode Sombre */}
+      <View style={[styles.section, { borderTopWidth: 1, borderTopColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Apparence</Text>
+        <View style={[styles.themeRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.themeRowLeft}>
+            <View style={[styles.themeIcon, { backgroundColor: isDark ? '#1A1D27' : '#F0F4FF' }]}>
+              <Moon size={20} color={isDark ? '#FFD23F' : colors.textSecondary} />
+            </View>
+            <View>
+              <Text style={[styles.themeLabel, { color: colors.text }]}>Mode sombre</Text>
+              <Text style={[styles.themeSubLabel, { color: colors.textSecondary }]}>
+                {isDark ? 'Activé' : 'Désactivé'}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={isDark}
+            onValueChange={toggleTheme}
+            trackColor={{ false: colors.border, true: colors.primary + '80' }}
+            thumbColor={isDark ? colors.primary : '#fff'}
+            ios_backgroundColor={colors.border}
+          />
         </View>
       </View>
 
@@ -595,13 +625,12 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     alignItems: 'center',
     padding: 32,
-    backgroundColor: Colors.surface,
   },
+
   avatarContainer: {
     position: 'relative',
     marginBottom: 16,
@@ -1136,5 +1165,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500' as const,
     color: Colors.text,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  themeRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  themeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  themeSubLabel: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });

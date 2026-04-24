@@ -15,8 +15,10 @@ import { InvoicesProvider } from "@/contexts/InvoicesContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { OrdersProvider } from "@/contexts/OrdersContext";
 import { OfflineProvider } from "@/contexts/OfflineContext";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -81,39 +83,49 @@ function RootLayoutNav() {
   );
 }
 
+function ThemedApp() {
+  const { colors } = useTheme();
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <AuthProvider>
+        <AppProvider>
+          <FavoritesProvider>
+          <ReviewsProvider>
+            <NegotiationsProvider>
+              <InvoicesProvider>
+                <MessagesProvider>
+                  <InventoryProvider>
+                    <StoriesProvider>
+                      <NotificationsProvider>
+                        <OrdersProvider>
+                          <OfflineProvider>
+                            <ErrorBoundary>
+                              <RootLayoutNav />
+                            </ErrorBoundary>
+                          </OfflineProvider>
+                        </OrdersProvider>
+                      </NotificationsProvider>
+                    </StoriesProvider>
+                  </InventoryProvider>
+                </MessagesProvider>
+              </InvoicesProvider>
+            </NegotiationsProvider>
+          </ReviewsProvider>
+          </FavoritesProvider>
+        </AppProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
+  );
+}
+
 export default function RootLayout() {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <AuthProvider>
-            <AppProvider>
-              <FavoritesProvider>
-              <ReviewsProvider>
-                <NegotiationsProvider>
-                  <InvoicesProvider>
-                    <MessagesProvider>
-                      <InventoryProvider>
-                        <StoriesProvider>
-                          <NotificationsProvider>
-                            <OrdersProvider>
-                              <OfflineProvider>
-                                <ErrorBoundary>
-                                  <RootLayoutNav />
-                                </ErrorBoundary>
-                              </OfflineProvider>
-                            </OrdersProvider>
-                          </NotificationsProvider>
-                        </StoriesProvider>
-                      </InventoryProvider>
-                    </MessagesProvider>
-                  </InvoicesProvider>
-                </NegotiationsProvider>
-              </ReviewsProvider>
-              </FavoritesProvider>
-            </AppProvider>
-          </AuthProvider>
-        </GestureHandlerRootView>
+        <ThemeProvider>
+
+          <ThemedApp />
+        </ThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>
   );
