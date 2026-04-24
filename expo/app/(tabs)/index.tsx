@@ -7,13 +7,15 @@ import {
   Image,
   ScrollView,
   Animated,
-  Dimensions,
   Modal,
+  Platform,
+  Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Star, Zap, Menu, X, Search, Bell, Plus, MoreVertical, Package } from 'lucide-react-native';
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { Star, Zap, Menu, X, Search, Bell, Plus, MoreVertical, Package, MapPin, Navigation } from 'lucide-react-native';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import Colors from '@/constants/colors';
 import { CATEGORIES } from '@/constants/categories';
 import { useApp } from '@/contexts/AppContext';
@@ -24,13 +26,19 @@ import { mockProducts, mockShops, formatPrice } from '@/mocks/data';
 import { MEASUREMENT_UNITS } from '@/constants/units';
 import { Product, Shop, DeliveryMethod } from '@/types';
 import React from 'react';
+import HeroSection from '@/components/HeroSection';
+import { SkeletonGrid } from '@/components/SkeletonCard';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
+  // #1 Grille responsive
+  const numCols = screenWidth >= 1024 ? 4 : screenWidth >= 768 ? 3 : 2;
+  const isDesktop = screenWidth >= 768;
+  const DRAWER_WIDTH = screenWidth * 0.75;
+
   const { selectedCountry, updateCountry, user } = useApp();
   const { products, transactions } = useInventory();
   const { groupedStories, myStories } = useStories();
@@ -38,6 +46,10 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [expandedDrawerCategories, setExpandedDrawerCategories] = useState<Set<string>>(new Set());
+  const [gpsActive, setGpsActive] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number; lng: number} | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   const categories = useMemo(() => {
     return ['Tous', ...CATEGORIES.map(cat => cat.name)];
@@ -46,6 +58,40 @@ export default function HomeScreen() {
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [shopFilter, setShopFilter] = useState<'all' | 'products' | 'suppliers'>('all');
   const drawerAnimation = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+
+  // Simulate loading
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  // #22 GPS — Produits près de moi
+  const handleGpsToggle = useCallback(() => {
+    if (gpsActive) {
+      setGpsActive(false);
+      setUserLocation(null);
+      return;
+    }
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setGpsActive(true);
+        },
+        () => setGpsActive(false)
+      );
+    }
+  }, [gpsActive]);
+
+  const getDistance = useCallback((lat: number, lng: number) => {
+    if (!userLocation) return undefined;
+    const R = 6371;
+    const dLat = (lat - userLocation.lat) * Math.PI / 180;
+    const dLon = (lng - userLocation.lng) * Math.PI / 180;
+    const a = Math.sin(dLat/2) ** 2 + Math.cos(userLocation.lat * Math.PI/180) * Math.cos(lat * Math.PI/180) * Math.sin(dLon/2) ** 2;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+  }, [userLocation]);
+
 
   const isShopOwner = user?.role === 'producteur';
 
@@ -100,8 +146,19 @@ export default function HomeScreen() {
     if (selectedSubcategory) {
       prods = prods.filter((p) => p.subcategory === selectedSubcategory);
     }
-    return prods.sort((a, b) => (b.isBoosted ? 1 : 0) - (a.isBoosted ? 1 : 0));
-  }, [selectedCountry, selectedCategory, selectedSubcategory, products, user, isShopOwner]);
+    return prods.sort((a, b) => {
+      // Boostés en premier
+      if (b.isBoosted !== a.isBoosted) return (b.isBoosted ? 1 : 0) - (a.isBoosted ? 1 : 0);
+      // #22 Si GPS actif, tri par distance
+      if (gpsActive && userLocation) {
+        const distA = getDistance((a.shop as any).latitude || 14.69, (a.shop as any).longitude || -17.44) || 9999;
+        const distB = getDistance((b.shop as any).latitude || 14.69, (b.shop as any).longitude || -17.44) || 9999;
+        return distA - distB;
+      }
+      return 0;
+    });
+  }, [selectedCountry, selectedCategory, selectedSubcategory, products, user, isShopOwner, gpsActive, userLocation, getDistance]);
+
 
   const shopRevenue = useMemo(() => {
     const salesTransactions = transactions.filter(t => t.type === 'vente');
@@ -285,12 +342,23 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* #2 Hero section pour les visiteurs non connectés */}
+      {!user && <HeroSection />}
+
+      {/* #1 Grille responsive avec skeleton (#4) */}
+      {isLoading ? (
+        <SkeletonGrid count={numCols * 2} />
+      ) : (
       <FlatList
         data={filteredProducts}
         keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.productList}
-        columnWrapperStyle={styles.productRow}
+        key={numCols} // force re-render quand numCols change
+        numColumns={numCols}
+        contentContainerStyle={[
+          styles.productList,
+          isDesktop && { maxWidth: 1200, alignSelf: 'center' as any, width: '100%' },
+        ]}
+        columnWrapperStyle={numCols > 1 ? styles.productRow : undefined}
         renderItem={renderProductCard}
         ListHeaderComponent={
           <>
@@ -437,8 +505,8 @@ export default function HomeScreen() {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Aucun produit disponible</Text>
             <Text style={styles.emptySubtext}>
-              {selectedCategory !== 'Tous' 
-                ? `Aucun produit dans la catégorie "${selectedCategory}"${selectedSubcategory ? ` > "${selectedSubcategory}"` : ''}` 
+              {selectedCategory !== 'Tous'
+                ? `Aucun produit dans la catégorie "${selectedCategory}"${selectedSubcategory ? ` > "${selectedSubcategory}"` : ''}`
                 : 'Aucun produit disponible dans votre région pour le moment'}
             </Text>
             {selectedCategory !== 'Tous' && (
@@ -456,6 +524,8 @@ export default function HomeScreen() {
           </View>
         }
       />
+      )}
+
 
       <Modal
         visible={isDrawerOpen}
